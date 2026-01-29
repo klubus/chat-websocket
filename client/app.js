@@ -5,7 +5,20 @@ const messagesList = document.getElementById('messages-list');
 const addMessageForm = document.getElementById('add-messages-form');
 const userNameInput = document.getElementById('username');
 const messageContentInput = document.getElementById('message-content');
-console.log('login works', userName);
+const socket = io();
+socket.on('message', (event) => addMessage(event.author, event.content));
+socket.on('newUser', (userName) =>
+  addMessage(
+    'Chat Bot',
+    `<i> ${userName.login} has joined the conversation! </i>`
+  )
+);
+socket.on('removeUser', (user) => {
+  addMessage(
+    'Chat Bot',
+    `<i> ${user.login} has left the conversation... :( </i>`
+  );
+});
 
 function login(e) {
   e.preventDefault();
@@ -13,6 +26,7 @@ function login(e) {
     alert('User name field is empty');
   } else {
     userName = userNameInput.value;
+    socket.emit('join', { login: userName });
     loginForm.classList.remove('show');
     messagesSection.classList.add('show');
     addMessageForm.classList.add('show');
@@ -35,10 +49,14 @@ function addMessage(author, content) {
 
 function sendMessage(e) {
   e.preventDefault();
-  if (!messageContentInput.value.trim()) {
-    alert('Message field is empty');
+
+  let messageContent = messageContentInput.value;
+
+  if (!messageContent.length) {
+    alert('You have to type something!');
   } else {
-    addMessage(userName, messageContentInput.value);
+    addMessage(userName, messageContent);
+    socket.emit('message', { author: userName, content: messageContent });
     messageContentInput.value = '';
   }
 }
